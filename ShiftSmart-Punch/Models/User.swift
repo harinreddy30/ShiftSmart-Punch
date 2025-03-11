@@ -1,7 +1,10 @@
 import Foundation
 
-struct User {
-    let id: String
+struct User: Codable {
+    let employeeId: Int?
+    let fname: String
+    let lname: String
     let email: String
-    let name: String
-} 
+    let role: String
+}
+
