@@ -10,13 +10,13 @@ enum APIError: Error {
 
 class APIService {
     static let shared = APIService()
-    private let baseURL = "http://localhost:3000/api" // Change this to your actual backend URL
+    private let baseURL = "http://localhost:3000/api/v1"
     
     private init() {}
 
     // MARK: - Login Function
     func login(email: String, password: String, completion: @escaping (Result<LoginResponse, APIError>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/auth/login") else {
+        guard let url = URL(string: "\(baseURL)/login") else {
             completion(.failure(.invalidURL))
             return
         }
@@ -44,7 +44,12 @@ class APIService {
             }
             
             guard (200...299).contains(httpResponse.statusCode) else {
-                completion(.failure(.unauthorized))
+                if httpResponse.statusCode == 401 {
+                    // Explicit handling of unauthorized errors
+                    completion(.failure(.unauthorized))
+                } else {
+                    completion(.failure(.invalidResponse))
+                }
                 return
             }
             
@@ -55,16 +60,15 @@ class APIService {
             
             do {
                 let decodedResponse = try JSONDecoder().decode(LoginResponse.self, from: data)
-                
                 // Save JWT Token securely in Keychain
                 KeychainHelper.shared.save(decodedResponse.token, key: "jwtToken")
-                
                 completion(.success(decodedResponse))
             } catch {
                 completion(.failure(.decodingError(error)))
             }
         }.resume()
     }
+
 
     // MARK: - Fetch Shifts (Authenticated)
     func fetchShifts() async throws -> [Shift] {

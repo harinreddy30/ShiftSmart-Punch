@@ -25,7 +25,7 @@ struct LoginView: View {
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                 
                 if showError {
-                    Text(errorMessage)
+                    Text("Invalid username or password")
                         .foregroundColor(.red)
                         .font(.caption)
                 }
@@ -39,11 +39,11 @@ struct LoginView: View {
                         .background(Color.blue)
                         .cornerRadius(10)
                 }
-                
-                NavigationLink("", destination: ScheduleView(), isActive: $isLoggedIn)
-                    .hidden()
             }
             .padding()
+            .navigationDestination(isPresented: $isLoggedIn) {
+                ScheduleView()
+            }
         }
     }
     
@@ -55,11 +55,13 @@ struct LoginView: View {
         }
         
         authViewModel.login(email: email, password: password) { success, message in
-            if success {
-                isLoggedIn = true
-            } else {
-                errorMessage = message
-                showError = true
+            DispatchQueue.main.async {
+                if success {
+                    isLoggedIn = true
+                } else {
+                    errorMessage = message ?? "Login failed. Please try again."
+                    showError = true
+                }
             }
         }
     }

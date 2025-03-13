@@ -29,29 +29,29 @@ class ShiftsViewModel: ObservableObject {
     }
     
     func clockIn(shiftId: String) {
-        Task {
-            do {
-                try await apiService.clockIn(shiftId: shiftId)
-                await fetchShifts()
-            } catch {
-                await MainActor.run {
-                    self.error = error.localizedDescription
-                }
-            }
-        }
+//        Task {
+//            do {
+//                try await apiService.clockIn(shiftId: shiftId)
+//                await fetchShifts()
+//            } catch {
+//                await MainActor.run {
+//                    self.error = error.localizedDescription
+//                }
+//            }
+//        }
     }
     
     func clockOut(shiftId: String) {
-        Task {
-            do {
-                try await apiService.clockOut(shiftId: shiftId)
-                await fetchShifts()
-            } catch {
-                await MainActor.run {
-                    self.error = error.localizedDescription
-                }
-            }
-        }
+//        Task {
+//            do {
+//                try await apiService.clockOut(shiftId: shiftId)
+//                await fetchShifts()
+//            } catch {
+//                await MainActor.run {
+//                    self.error = error.localizedDescription
+//                }
+//            }
+//        }
     }
     
     // Helper methods for TimesheetView

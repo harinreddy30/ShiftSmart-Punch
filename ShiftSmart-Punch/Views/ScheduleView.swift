@@ -6,9 +6,9 @@ struct ScheduleView: View {
     @State private var shifts: [Shift] = [
         Shift(
             id: "shift1",
-            location: "Big Carrot", 
-            date: Date(), 
-            startTime: Calendar.current.date(bySettingHour: 9, minute: 30, second: 0, of: Date())!, 
+            location: "Big Carrot",
+            date: Date(),
+            startTime: Calendar.current.date(bySettingHour: 9, minute: 30, second: 0, of: Date())!,
             endTime: Calendar.current.date(bySettingHour: 15, minute: 0, second: 0, of: Date())!,
             clockInTime: nil,
             clockOutTime: nil
@@ -23,6 +23,8 @@ struct ScheduleView: View {
             clockOutTime: nil
         )
     ]
+    
+    @EnvironmentObject var authViewModel: AuthViewModel // AuthViewModel for managing authentication state
     
     var body: some View {
         VStack(spacing: 0) {
@@ -52,6 +54,19 @@ struct ScheduleView: View {
             }
             .padding()
             
+            // Logout Button (Moved to the top)
+            Button(action: {
+                logout()
+            }) {
+                Text("Logout")
+                    .font(.headline)
+                    .foregroundColor(.red)
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(8)
+            }
+            .padding(.top)
+
             // Calendar Strip
             CalendarStripView(selectedDate: $selectedDate)
             
@@ -80,6 +95,14 @@ struct ScheduleView: View {
     
     var filteredShifts: [Shift] {
         shifts.filter { Calendar.current.isDate($0.date, equalTo: selectedDate, toGranularity: .day) }
+    }
+    
+    private func logout() {
+        // Call the logout function in AuthViewModel
+        authViewModel.logout()
+        
+        // Navigate back to the Login screen
+        dismiss() // This dismisses the current view (ScheduleView)
     }
 }
 
@@ -117,5 +140,6 @@ struct ShiftCardView: View {
 #Preview {
     NavigationView {
         ScheduleView()
+            .environmentObject(AuthViewModel()) // Don't forget to inject the environment object
     }
-} 
+}
