@@ -42,8 +42,13 @@ struct LoginView: View {
             }
             .padding()
             .navigationDestination(isPresented: $isLoggedIn) {
-                ScheduleView()
+                if let token = KeychainHelper.shared.get("jwtToken") {
+                    ScheduleView(viewModel: ScheduleViewModel(authToken: token))  // ✅ Pass token to ScheduleViewModel
+                } else {
+                    Text("Error: No token found")
+                }
             }
+
         }
     }
     

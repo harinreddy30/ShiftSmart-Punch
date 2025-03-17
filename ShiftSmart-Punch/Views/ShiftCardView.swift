@@ -1,11 +1,3 @@
-//
-//  ShiftCardView.swift
-//  ShiftSmart-Punch
-//
-//  Created by Rohit Mahenderker on 2025-03-16.
-//
-
-
 import SwiftUI
 
 struct ShiftCardView: View {
@@ -14,24 +6,28 @@ struct ShiftCardView: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 8) {
-                Text(shift.site.name) // Display site name
+                Text(shift.shiftId.position) // ✅ Shift role/title
                     .font(.headline)
-                
-                HStack {
-                    Image(systemName: "mappin.and.ellipse")
-                    Text(shift.site.location.address) // Display address
-                }
-                .foregroundColor(.gray)
-                
-                Text("\(shift.startTime) - \(shift.endTime)")
+
+                Text("Site: \(shift.shiftId.site.name)")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+
+                Text("Location: \(shift.shiftId.site.location.address)")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+
+                Text("Start Time: \(shift.shiftId.startTime) - End Time: \(shift.shiftId.endTime)")
                     .foregroundColor(.gray)
             }
-            
+
             Spacer()
-            
-            Text("\(shift.totalHours) hrs")
-                .padding(8)
-                .background(Circle().fill(Color.gray.opacity(0.3)))
+
+            // ✅ Move total hours inside the card for better alignment
+            Text("\(shift.shiftId.totalHours) hrs")
+                .padding(10)
+                .background(Color.red.opacity(0.2))
+                .cornerRadius(10)
         }
         .padding()
         .background(Color.gray.opacity(0.1))

@@ -1,22 +1,16 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var authViewModel = AuthViewModel()  // Create AuthViewModel instance
-    
+    @StateObject private var authViewModel = AuthViewModel()
+    @StateObject private var scheduleViewModel = ScheduleViewModel()
+
     var body: some View {
-        // Check if the user is authenticated
         if authViewModel.isAuthenticated {
-            // Show ScheduleView if authenticated
-            ScheduleView()
-                .environmentObject(authViewModel)  // Pass the AuthViewModel to ScheduleView
+            ScheduleView(viewModel: scheduleViewModel)
+                .environmentObject(authViewModel)
         } else {
-            // Show LoginView if not authenticated
             LoginView()
-                .environmentObject(authViewModel)  // Pass the AuthViewModel to LoginView
+                .environmentObject(authViewModel)
         }
     }
-}
-
-#Preview {
-    ContentView()
 }

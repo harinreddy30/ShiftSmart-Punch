@@ -1,3 +1,11 @@
+//
+//  Site.swift
+//  ShiftSmart-Punch
+//
+//  Created by Rohit Mahenderker on 2025-03-16.
+//
+
+
 import Foundation
 
 struct Site: Codable {
