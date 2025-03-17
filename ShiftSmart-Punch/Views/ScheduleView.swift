@@ -1,145 +1,151 @@
 import SwiftUI
 
 struct ScheduleView: View {
-    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var viewModel: ScheduleViewModel
     @State private var selectedDate = Date()
-    @State private var shifts: [Shift] = [
-        Shift(
-            id: "shift1",
-            location: "Big Carrot",
-            date: Date(),
-            startTime: Calendar.current.date(bySettingHour: 9, minute: 30, second: 0, of: Date())!,
-            endTime: Calendar.current.date(bySettingHour: 15, minute: 0, second: 0, of: Date())!,
-            clockInTime: nil,
-            clockOutTime: nil
-        ),
-        Shift(
-            id: "shift2",
-            location: "No Frills - Damiano",
-            date: Calendar.current.date(byAdding: .day, value: 1, to: Date())!,
-            startTime: Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date())!,
-            endTime: Calendar.current.date(bySettingHour: 14, minute: 0, second: 0, of: Date())!,
-            clockInTime: nil,
-            clockOutTime: nil
-        )
-    ]
-    
-    @EnvironmentObject var authViewModel: AuthViewModel // AuthViewModel for managing authentication state
-    
+
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
+        VStack(spacing: 10) {
+            // ✅ Fixed Top Navigation Bar
+            ZStack {
+                HStack {
+                    Button(action: { /* Handle back action */ }) {
+                        Image(systemName: "chevron.left").foregroundColor(.red)
+                    }
+                    Spacer()
+                    Text("GTA")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    Spacer()
+                    HStack(spacing: 15) {
+                        Image(systemName: "calendar").foregroundColor(.red)
+                        Image(systemName: "magnifyingglass").foregroundColor(.red)
+                        Image(systemName: "gearshape").foregroundColor(.red)
+                    }
+                }
+                .padding(.horizontal)
+            }
+            .frame(height: 50) // ✅ Prevent shifting
+
+            // ✅ Week Selector with Arrows
             HStack {
-                Button(action: {
-                    dismiss()
-                }) {
+                Button(action: { moveWeek(by: -1) }) {
                     Image(systemName: "chevron.left")
                         .foregroundColor(.red)
+                        .padding(.horizontal)
                 }
-                
-                Text("GTA")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                
                 Spacer()
-                
-                HStack(spacing: 15) {
-                    Image(systemName: "calendar")
+                Text("\(formattedWeekRange)")
+                    .font(.headline)
+                Spacer()
+                Button(action: { moveWeek(by: 1) }) {
+                    Image(systemName: "chevron.right")
                         .foregroundColor(.red)
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.red)
-                    Image(systemName: "gearshape")
-                        .foregroundColor(.red)
+                        .padding(.horizontal)
                 }
             }
-            .padding()
-            
-            // Logout Button (Moved to the top)
-            Button(action: {
-                logout()
-            }) {
-                Text("Logout")
-                    .font(.headline)
-                    .foregroundColor(.red)
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(8)
-            }
-            .padding(.top)
+            .padding(.vertical, 5)
 
-            // Calendar Strip
-            CalendarStripView(selectedDate: $selectedDate)
-            
-            // Shifts List
+            // ✅ Weekdays Row
+            HStack {
+                ForEach(getWeekDays(), id: \.self) { day in
+                    VStack {
+                        Text(day, format: .dateTime.weekday(.short)) // "Mon", "Tue", etc.
+                            .foregroundColor(.gray)
+                        Text(day, format: .dateTime.day()) // Day number
+                            .padding(8)
+                            .background(isSelectedDay(day) ? Color.red : Color.clear)
+                            .foregroundColor(isSelectedDay(day) ? .white : .black)
+                            .clipShape(Circle())
+                    }
+                    .onTapGesture {
+                        selectedDate = day
+                    }
+                }
+            }
+            .padding(.bottom, 10)
+
+            // ✅ Shifts List
             ScrollView {
-                VStack(spacing: 15) {
-                    ForEach(filteredShifts) { shift in
-                        NavigationLink(destination: ClockInView(shift: shift)) {
+                VStack(spacing: 10) {
+                    if filteredShifts.isEmpty {
+                        Text("No shifts available for this day.")
+                            .foregroundColor(.gray)
+                    } else {
+                        ForEach(filteredShifts) { shift in
                             ShiftCardView(shift: shift)
                         }
                     }
-                    
-                    // Week Summary
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Week summary Feb 10 - Feb 16 • 5 shifts")
-                            .font(.headline)
-                            .padding(.horizontal)
-                    }
-                    .padding(.top)
                 }
                 .padding()
             }
-        }
-        .navigationBarHidden(true)
-    }
-    
-    var filteredShifts: [Shift] {
-        shifts.filter { Calendar.current.isDate($0.date, equalTo: selectedDate, toGranularity: .day) }
-    }
-    
-    private func logout() {
-        // Call the logout function in AuthViewModel
-        authViewModel.logout()
-        
-        // Navigate back to the Login screen
-        dismiss() // This dismisses the current view (ScheduleView)
-    }
-}
 
-struct ShiftCardView: View {
-    let shift: Shift
-    
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Plainclothes Loss Prevention")
-                    .font(.headline)
-                
-                HStack {
-                    Image(systemName: "building.2")
-                    Text(shift.location)
-                }
+            // ✅ Weekly Hours Summary
+            Text("Week summary \(formattedWeekRange) • \(totalWeeklyHours) hrs")
+                .font(.subheadline)
                 .foregroundColor(.gray)
-                
-                Text("\(shift.startTime.formatted(date: .omitted, time: .shortened)) - \(shift.endTime.formatted(date: .omitted, time: .shortened))")
-                    .foregroundColor(.gray)
-            }
-            
-            Spacer()
-            
-            Text("HR")
-                .padding(8)
-                .background(Circle().fill(Color.gray.opacity(0.3)))
+                .padding(.top, 5)
         }
-        .padding()
-        .background(Color.gray.opacity(0.1))
-        .cornerRadius(10)
+        .onAppear {
+            print("🔹 ScheduleView Appeared - Fetching Shifts")
+            viewModel.fetchShifts()
+        }
     }
-}
 
-#Preview {
-    NavigationView {
-        ScheduleView()
-            .environmentObject(AuthViewModel()) // Don't forget to inject the environment object
+    // ✅ Get Start & End Dates for the Current Week
+    var formattedWeekRange: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        let start = formatter.string(from: startOfWeek)
+        let end = formatter.string(from: endOfWeek)
+        return "\(start) - \(end)"
     }
+
+    // ✅ Get Dates for the Current Week (Monday-Sunday)
+    private func getWeekDays() -> [Date] {
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Start week on Monday
+        let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: selectedDate))!
+        return (0...6).compactMap { calendar.date(byAdding: .day, value: $0, to: startOfWeek) }
+    }
+
+    // ✅ Move Between Weeks
+    private func moveWeek(by weeks: Int) {
+        if let newDate = Calendar.current.date(byAdding: .weekOfYear, value: weeks, to: selectedDate) {
+            selectedDate = newDate
+        }
+    }
+
+    // ✅ Check if Day is Selected
+    private func isSelectedDay(_ date: Date) -> Bool {
+        Calendar.current.isDate(date, inSameDayAs: selectedDate)
+    }
+
+    private var startOfWeek: Date {
+        let calendar = Calendar.current
+        return calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: selectedDate))!
+    }
+    
+    private var endOfWeek: Date {
+        Calendar.current.date(byAdding: .day, value: 6, to: startOfWeek)!
+    }
+
+    var filteredShifts: [Shift] {
+        viewModel.shifts.filter { shift in
+            guard let shiftDate = shift.dateObject else { return false }
+            return isSelectedDay(shiftDate)
+        }
+    }
+
+    var totalWeeklyHours: Int {
+        viewModel.shifts
+            .filter { isDateInCurrentWeek($0.dateObject) }
+            .reduce(0) { $0 + $1.shiftId.totalHours }
+    }
+
+    private func isDateInCurrentWeek(_ date: Date?) -> Bool {
+        guard let date = date else { return false }
+        return Calendar.current.isDate(date, equalTo: selectedDate, toGranularity: .weekOfYear)
+    }
+
 }
