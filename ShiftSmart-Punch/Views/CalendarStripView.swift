@@ -2,53 +2,50 @@ import SwiftUI
 
 struct CalendarStripView: View {
     @Binding var selectedDate: Date
-    let calendar = Calendar.current
-    
-    private let daysToShow = 14 // Two weeks
-    private let dayWidth: CGFloat = 40
-    
+    private let calendar = Calendar.current
+
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 20) {
-                ForEach(getDates(), id: \.self) { date in
+            HStack(spacing: 10) {
+                ForEach(getWeekDates(), id: \.self) { date in
                     VStack {
-                        Text(getDayName(date))
-                            .font(.caption)
+                        Text(formatDay(date))
+                            .font(.subheadline)
                             .foregroundColor(.gray)
                         
-                        Text("\(calendar.component(.day, from: date))")
-                            .font(.system(size: 20, weight: .medium))
-                            .frame(width: dayWidth)
-                            .padding(8)
-                            .background(
-                                Circle()
-                                    .fill(isSelected(date) ? Color.blue : Color.clear)
-                            )
-                            .foregroundColor(isSelected(date) ? .white : .primary)
+                        Text(formatDate(date))
+                            .font(.headline)
+                            .foregroundColor(selectedDate == date ? .white : .black)
+                            .padding()
+                            .background(selectedDate == date ? Color.blue : Color.clear)
+                            .cornerRadius(10)
                     }
                     .onTapGesture {
-                        selectedDate = date
+                        selectedDate = date  // ✅ Update selected date
                     }
                 }
             }
             .padding()
         }
     }
-    
-    private func getDates() -> [Date] {
-        let today = calendar.startOfDay(for: Date())
-        return (0..<daysToShow).compactMap { day in
-            calendar.date(byAdding: .day, value: day, to: today)
-        }
+
+    // ✅ Get all days of the current week (Mon-Sun)
+    private func getWeekDates() -> [Date] {
+        guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: selectedDate)?.start else { return [] }
+        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart) }
     }
-    
-    private func getDayName(_ date: Date) -> String {
+
+    // ✅ Format Date (e.g., "12")
+    private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "EEE"
+        formatter.dateFormat = "d"
         return formatter.string(from: date)
     }
-    
-    private func isSelected(_ date: Date) -> Bool {
-        calendar.isDate(date, equalTo: selectedDate, toGranularity: .day)
+
+    // ✅ Format Day (e.g., "Mon")
+    private func formatDay(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "E"
+        return formatter.string(from: date)
     }
-} 
+}

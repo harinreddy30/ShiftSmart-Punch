@@ -10,7 +10,7 @@ enum APIError: Error {
 
 class APIService {
     static let shared = APIService()
-    private let baseURL = "http://127.0.0.1:3000/api/v1" // BaseURL
+    private let baseURL = "http://127.0.0.1:3000/api/v1"
         
     private init() {}
 
