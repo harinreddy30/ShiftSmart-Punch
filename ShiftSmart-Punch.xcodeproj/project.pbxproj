@@ -398,6 +398,8 @@
 				DEVELOPMENT_ASSET_PATHS = "\"ShiftSmart-Punch/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "\"Permission required to track your location\"";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "\"Permission required to track your location\"";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -426,6 +428,8 @@
 				DEVELOPMENT_ASSET_PATHS = "\"ShiftSmart-Punch/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "\"Permission required to track your location\"";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "\"Permission required to track your location\"";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
