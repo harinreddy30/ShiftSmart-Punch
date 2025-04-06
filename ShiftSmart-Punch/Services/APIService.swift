@@ -6,6 +6,7 @@ enum APIError: Error {
     case invalidResponse
     case decodingError(Error)
     case unauthorized
+    case serverError
 }
 
 class APIService {
@@ -104,6 +105,173 @@ class APIService {
         }
     }
 
+    func clockIn(scheduleId: String) async throws -> ClockRecord {
+        let url = "\(baseURL)/clockIn/clockin"
+        let request = ClockInRequest(scheduleId: scheduleId, clockInTime: Date())
+        
+        guard let urlObj = URL(string: url) else {
+            print("❌ Invalid URL: \(url)")
+            throw APIError.invalidURL
+        }
+        
+        var urlRequest = URLRequest(url: urlObj)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        guard let token = KeychainHelper.shared.get("jwtToken") else {
+            print("❌ No token found for clock in")
+            throw APIError.unauthorized
+        }
+        urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        
+        do {
+            urlRequest.httpBody = try encoder.encode(request)
+            print("✅ Request body encoded: \(String(data: urlRequest.httpBody!, encoding: .utf8) ?? "")")
+        } catch {
+            print("❌ Failed to encode request: \(error)")
+            throw APIError.invalidResponse
+        }
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ Invalid response type")
+                throw APIError.invalidResponse
+            }
+            
+            print("🔹 Clock in response status: \(httpResponse.statusCode)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("🔹 Clock in response body: \(responseString)")
+            }
+            
+            if httpResponse.statusCode == 401 {
+                print("❌ Unauthorized request")
+                throw APIError.unauthorized
+            }
+            
+            guard httpResponse.statusCode == 200 || httpResponse.statusCode == 201 else {
+                print("❌ Server error with status: \(httpResponse.statusCode)")
+                throw APIError.serverError
+            }
+            
+            let decoder = JSONDecoder()
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            decoder.dateDecodingStrategy = .custom { decoder in
+                let container = try decoder.singleValueContainer()
+                let dateString = try container.decode(String.self)
+                
+                if let date = formatter.date(from: dateString) {
+                    return date
+                }
+                
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format")
+            }
+            
+            do {
+                let record = try decoder.decode(ClockRecord.self, from: data)
+                print("✅ Successfully clocked in")
+                return record
+            } catch {
+                print("❌ Failed to decode response: \(error)")
+                throw APIError.decodingError(error)
+            }
+        } catch {
+            print("❌ Network error: \(error)")
+            throw APIError.networkError(error)
+        }
+    }
 
+    func clockOut(clockRecordId: String) async throws -> ClockRecord {
+        let url = "\(baseURL)/clockIn/clockout/\(clockRecordId)"
+        let request = ClockOutRequest(clockOutTime: Date())
+        
+        var urlRequest = URLRequest(url: URL(string: url)!)
+        urlRequest.httpMethod = "PUT"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        guard let token = KeychainHelper.shared.get("jwtToken") else {
+            throw APIError.unauthorized
+        }
+        urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        urlRequest.httpBody = try encoder.encode(request)
+        
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+        
+        if httpResponse.statusCode == 401 {
+            throw APIError.unauthorized
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw APIError.serverError
+        }
+        
+        let decoder = JSONDecoder()
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let dateString = try container.decode(String.self)
+            
+            if let date = formatter.date(from: dateString) {
+                return date
+            }
+            
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format")
+        }
+        return try decoder.decode(ClockRecord.self, from: data)
+    }
+
+    func getClockRecords(scheduleId: String) async throws -> [ClockRecord] {
+        let url = "\(baseURL)/clockIn/employee/\(scheduleId)"
+        
+        var urlRequest = URLRequest(url: URL(string: url)!)
+        urlRequest.httpMethod = "GET"
+        
+        guard let token = KeychainHelper.shared.get("jwtToken") else {
+            throw APIError.unauthorized
+        }
+        urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+        
+        if httpResponse.statusCode == 401 {
+            throw APIError.unauthorized
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw APIError.serverError
+        }
+        
+        let decoder = JSONDecoder()
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let dateString = try container.decode(String.self)
+            
+            if let date = formatter.date(from: dateString) {
+                return date
+            }
+            
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format")
+        }
+        return try decoder.decode([ClockRecord].self, from: data)
+    }
 
 }
