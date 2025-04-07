@@ -3,96 +3,164 @@ import SwiftUI
 struct ScheduleView: View {
     @ObservedObject var viewModel: ScheduleViewModel
     @State private var selectedDate = Date()
+    @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var showingProfile = false
+
+    init(viewModel: ScheduleViewModel) {
+        self.viewModel = viewModel
+    }
+    struct TimesheetView: View {
+        var body: some View {
+            Text("Timesheet will be shown here.")
+                .font(.title2)
+                .foregroundColor(.gray)
+                .padding()
+        }
+    }
 
     var body: some View {
-        VStack(spacing: 10) {
-            // ✅ Fixed Top Navigation Bar
-            ZStack {
-                HStack {
-                    Button(action: { /* Handle back action */ }) {
-                        Image(systemName: "chevron.left").foregroundColor(.red)
+        VStack(spacing: 0) {
+            // Modern Navigation Bar
+            HStack {
+                Text("Schedule")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                
+                Spacer()
+                
+                HStack(spacing: 20) {
+                    NavigationLink(destination: TimesheetView()) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 20))
+                            .foregroundColor(.blue)
                     }
-                    Spacer()
-                    Text("GTA")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    Spacer()
-                    HStack(spacing: 15) {
-                        Image(systemName: "calendar").foregroundColor(.red)
-                        Image(systemName: "magnifyingglass").foregroundColor(.red)
-                        Image(systemName: "gearshape").foregroundColor(.red)
+                    
+                    Button(action: {
+                        authViewModel.logout()
+                    }) {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                            .font(.system(size: 20))
+                            .foregroundColor(.red)
+                    }
+                }
+            }
+            .padding()
+            .background(Color(.systemBackground))
+            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+
+            // Week Selector with modern design
+            HStack {
+                Button(action: { moveWeek(by: -1) }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.blue)
+                        .padding(8)
+                        .background(Color.blue.opacity(0.1))
+                        .clipShape(Circle())
+                }
+                
+                Spacer()
+                
+                Text(formattedWeekRange)
+                    .font(.headline)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(20)
+                
+                Spacer()
+                
+                Button(action: { moveWeek(by: 1) }) {
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.blue)
+                        .padding(8)
+                        .background(Color.blue.opacity(0.1))
+                        .clipShape(Circle())
+                }
+            }
+            .padding()
+
+            // Weekdays Row with modern design
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(getWeekDays(), id: \.self) { day in
+                        VStack(spacing: 8) {
+                            Text(day, format: .dateTime.weekday(.short))
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                            
+                            Text(day, format: .dateTime.day())
+                                .font(.headline)
+                                .frame(width: 36, height: 36)
+                                .background(isSelectedDay(day) ? Color.blue : Color.clear)
+                                .foregroundColor(isSelectedDay(day) ? .white : .primary)
+                                .clipShape(Circle())
+                        }
+                        .onTapGesture {
+                            withAnimation {
+                                selectedDate = day
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal)
             }
-            .frame(height: 50) // ✅ Prevent shifting
+            .padding(.vertical, 10)
 
-            // ✅ Week Selector with Arrows
-            HStack {
-                Button(action: { moveWeek(by: -1) }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.red)
-                        .padding(.horizontal)
-                }
-                Spacer()
-                Text("\(formattedWeekRange)")
-                    .font(.headline)
-                Spacer()
-                Button(action: { moveWeek(by: 1) }) {
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.red)
-                        .padding(.horizontal)
-                }
-            }
-            .padding(.vertical, 5)
-
-            // ✅ Weekdays Row
-            HStack {
-                ForEach(getWeekDays(), id: \.self) { day in
-                    VStack {
-                        Text(day, format: .dateTime.weekday(.short)) // "Mon", "Tue", etc.
-                            .foregroundColor(.gray)
-                        Text(day, format: .dateTime.day()) // Day number
-                            .padding(8)
-                            .background(isSelectedDay(day) ? Color.red : Color.clear)
-                            .foregroundColor(isSelectedDay(day) ? .white : .black)
-                            .clipShape(Circle())
-                    }
-                    .onTapGesture {
-                        selectedDate = day
-                    }
-                }
-            }
-            .padding(.bottom, 10)
-
-            // ✅ Shifts List
+            // Shifts List with modern design
             ScrollView {
-                VStack(spacing: 10) {
-                    if filteredShifts.isEmpty {
-                        Text("No shifts available for this day.")
+                if filteredShifts.isEmpty {
+                    VStack(spacing: 20) {
+                        Image(systemName: "calendar.badge.clock")
+                            .font(.system(size: 50))
                             .foregroundColor(.gray)
-                    } else {
+                            .padding(.top, 50)
+                        
+                        Text("No shifts scheduled")
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                        
+                        Text("You have no shifts scheduled for this day")
+                            .font(.subheadline)
+                            .foregroundColor(.gray.opacity(0.8))
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                } else {
+                    VStack(spacing: 15) {
                         ForEach(filteredShifts) { shift in
-                            ShiftCardView(shift: shift)
+                            NavigationLink(destination: ShiftDetailView(shift: shift)) {
+                                ShiftCardView(shift: shift)
+                                    .transition(.scale)
+                            }
                         }
                     }
+                    .padding()
                 }
-                .padding()
             }
 
-            // ✅ Weekly Hours Summary
-            Text("Week summary \(formattedWeekRange) • \(totalWeeklyHours) hrs")
-                .font(.subheadline)
-                .foregroundColor(.gray)
-                .padding(.top, 5)
+            // Week summary with modern design
+            HStack {
+                Image(systemName: "clock")
+                    .foregroundColor(.blue)
+                Text("Week total:")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                Text("\(totalWeeklyHours) hrs")
+                    .font(.headline)
+                    .foregroundColor(.blue)
+            }
+            .padding()
+            .background(Color(.systemBackground))
+            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: -2)
         }
+        .navigationBarHidden(true)
         .onAppear {
             print("🔹 ScheduleView Appeared - Fetching Shifts")
             viewModel.fetchShifts()
         }
     }
 
-    // ✅ Get Start & End Dates for the Current Week
+    // Helper functions remain the same
     var formattedWeekRange: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d"
@@ -101,7 +169,6 @@ struct ScheduleView: View {
         return "\(start) - \(end)"
     }
 
-    // ✅ Get Dates for the Current Week (Monday-Sunday)
     private func getWeekDays() -> [Date] {
         var calendar = Calendar.current
         calendar.firstWeekday = 2 // Start week on Monday
@@ -109,14 +176,14 @@ struct ScheduleView: View {
         return (0...6).compactMap { calendar.date(byAdding: .day, value: $0, to: startOfWeek) }
     }
 
-    // ✅ Move Between Weeks
     private func moveWeek(by weeks: Int) {
-        if let newDate = Calendar.current.date(byAdding: .weekOfYear, value: weeks, to: selectedDate) {
-            selectedDate = newDate
+        withAnimation {
+            if let newDate = Calendar.current.date(byAdding: .weekOfYear, value: weeks, to: selectedDate) {
+                selectedDate = newDate
+            }
         }
     }
 
-    // ✅ Check if Day is Selected
     private func isSelectedDay(_ date: Date) -> Bool {
         Calendar.current.isDate(date, inSameDayAs: selectedDate)
     }
@@ -140,12 +207,16 @@ struct ScheduleView: View {
     var totalWeeklyHours: Int {
         viewModel.shifts
             .filter { isDateInCurrentWeek($0.dateObject) }
-            .reduce(0) { $0 + $1.shiftId.totalHours }
+            .reduce(0) { total, shift in
+                if let shiftDetails = shift.shiftId {
+                    return total + shiftDetails.totalHours
+                }
+                return total + shift.totalHours
+            }
     }
 
     private func isDateInCurrentWeek(_ date: Date?) -> Bool {
         guard let date = date else { return false }
         return Calendar.current.isDate(date, equalTo: selectedDate, toGranularity: .weekOfYear)
     }
-
 }
