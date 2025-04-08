@@ -4,11 +4,10 @@ import SwiftUI
 struct LoginView: View {
     @State private var email: String = ""
     @State private var password: String = ""
-    @State private var isLoggedIn = false
     @State private var showError = false
     @State private var errorMessage = ""
     
-    @ObservedObject var authViewModel = AuthViewModel()
+    @EnvironmentObject var authViewModel: AuthViewModel
     
     var body: some View {
         NavigationStack {
@@ -26,7 +25,7 @@ struct LoginView: View {
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                 
                 if showError {
-                    Text("Invalid username or password")
+                    Text(errorMessage)
                         .foregroundColor(.red)
                         .font(.caption)
                 }
@@ -42,14 +41,6 @@ struct LoginView: View {
                 }
             }
             .padding()
-            .navigationDestination(isPresented: $isLoggedIn) {
-                if let token = KeychainHelper.shared.get("jwtToken") {
-                    ScheduleView(viewModel: ScheduleViewModel(authToken: token))  // ✅ Pass token to ScheduleViewModel
-                } else {
-                    Text("Error: No token found")
-                }
-            }
-
         }
     }
     
@@ -63,7 +54,7 @@ struct LoginView: View {
         authViewModel.login(email: email, password: password) { success, message in
             DispatchQueue.main.async {
                 if success {
-                    isLoggedIn = true
+                    showError = false
                 } else {
                     errorMessage = message ?? "Login failed. Please try again."
                     showError = true
